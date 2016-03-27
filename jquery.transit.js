@@ -46,6 +46,9 @@
 
   var div = document.createElement('div');
   var support = {};
+  
+  // Save the old transitions of each element so we can restore it later.
+  var oldTransitions = {};
 
   // Helper function to get the proper vendor property name.
   // (`transition` => `WebkitTransition`)
@@ -625,9 +628,6 @@
       return self;
     }
 
-    // Save the old transitions of each element so we can restore it later.
-    var oldTransitions = {};
-
     var run = function(nextCall) {
       var bound = false;
 
@@ -637,7 +637,16 @@
 
         if (i > 0) {
           self.each(function() {
-            this.style[support.transition] = (oldTransitions[this] || null);
+           // restore the next old transition value if any
+           if (oldTransitions[this] && oldTransitions[this].length > 0) {
+             var item = this;
+             $(transitionValue.split(/\s*,\s*/g)).each(function( index, property ) {
+                oldTransitions[item].splice(oldTransitions[item].indexOf(property), 1);
+             });
+             this.style[support.transition] = oldTransitions[this].join(", ");
+           } else {
+             this.style[support.transition] = "";
+           }
           });
         }
 
@@ -657,7 +666,17 @@
       // Apply transitions.
       self.each(function() {
         if (i > 0) {
-          this.style[support.transition] = transitionValue;
+          // if a running transition is in effect, do not overwrite them
+          // merge instead
+          oldTransitions[this] = oldTransitions[this] || [];
+
+          var item = this;
+          $(transitionValue.split(/\s*,\s*/g)).each(function( index, property ) {
+            if (oldTransitions[item].indexOf(property) === -1) {
+              oldTransitions[item].push(property);
+            }
+          });
+          this.style[support.transition] = oldTransitions[this].join(", ");
         }
         $(this).css(theseProperties);
       });
