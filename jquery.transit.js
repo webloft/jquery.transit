@@ -552,7 +552,7 @@
     var self  = this;
     var delay = 0;
     var queue = true;
-
+    var htmlObjRef = [];
     var theseProperties = $.extend(true, {}, properties);
 
     // Account for `.transition(properties, callback)`.
@@ -637,13 +637,15 @@
 
         if (i > 0) {
           self.each(function() {
+             
+           var id = getId(this);
+           
            // restore the next old transition value if any
-           if (oldTransitions[this] && oldTransitions[this].length > 0) {
-             var item = this;
+           if (oldTransitions[id] && oldTransitions[id].length > 0) {
              $(transitionValue.split(/\s*,\s*/g)).each(function( index, property ) {
-                oldTransitions[item].splice(oldTransitions[item].indexOf(property), 1);
+                oldTransitions[id].splice(oldTransitions[id].indexOf(property), 1);
              });
-             this.style[support.transition] = oldTransitions[this].join(", ");
+             this.style[support.transition] = oldTransitions[id].join(", ");
            } else {
              this.style[support.transition] = "";
            }
@@ -665,18 +667,21 @@
 
       // Apply transitions.
       self.each(function() {
+          
+        // get/set a unique id if none
+        var id = getId(this);
+        
         if (i > 0) {
           // if a running transition is in effect, do not overwrite them
           // merge instead
-          oldTransitions[this] = oldTransitions[this] || [];
+          oldTransitions[id] = oldTransitions[id] || [];
 
-          var item = this;
           $(transitionValue.split(/\s*,\s*/g)).each(function( index, property ) {
-            if (oldTransitions[item].indexOf(property) === -1) {
-              oldTransitions[item].push(property);
+            if (oldTransitions[id].indexOf(property) === -1) {
+              oldTransitions[id].push(property);
             }
           });
-          this.style[support.transition] = oldTransitions[this].join(", ");
+          this.style[support.transition] = oldTransitions[id].join(", ");
         }
         $(this).css(theseProperties);
       });
@@ -687,6 +692,19 @@
     var deferredRun = function(next) {
         this.offsetWidth = this.offsetWidth; // force a repaint
         run(next);
+    };
+    
+    // ### getId(el)
+    // Get the element id
+    // so it can be recognized later or
+    // just returns an already set id.
+    // 
+    // @param {HTMLElement} el
+    // @returns {string}
+    var getId = function getId(el) {
+        var id = htmlObjRef.indexOf(el);
+        id = 'obj_' + (id === -1 ? htmlObjRef.push(el)-1 : id);
+        return id;
     };
 
     // Use jQuery's fx queue.
@@ -756,7 +774,7 @@
 
     return unit(i, 'ms');
   }
-
+  
   // Export some functions for testable-ness.
   $.transit.getTransitionValue = getTransition;
 
